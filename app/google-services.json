@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "208773949299",
+    "firebase_url": "https://medievalsim.firebaseio.com",
+    "project_id": "medievalsim",
+    "storage_bucket": "medievalsim.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:208773949299:android:93a23e55e002943c",
+        "android_client_info": {
+          "package_name": "org.christmann.medievalsim"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "208773949299-vgr3r37tpg8bbf87dcsf90iktr0s3j87.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.christmann.medievalsim",
+            "certificate_hash": "4B2F256EDB054D140871CA7B7760C8EB1C36358A"
+          }
+        },
+        {
+          "client_id": "208773949299-854i1jl2gi51fih5pltk20cngi2ub667.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAfEPksSNCWrhdl_Oyo9g_NT-dbmdv9vek"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "208773949299-854i1jl2gi51fih5pltk20cngi2ub667.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

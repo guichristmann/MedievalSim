@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">MedievalSim</string>
+
+    <!-- Login Screen Strings -->
+    <string name="login">Login</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="newAccount">Create New Account</string>
+    <string name="title_activity_game_screen">MedievalSim</string>
+</resources>
