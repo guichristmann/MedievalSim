@@ -1,6 +1,7 @@
 package org.christmann.medievalsim;
 
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
@@ -23,6 +24,8 @@ public class LoginScreen extends AppCompatActivity {
     Button loginButton, newAccountButton;
     EditText emailET, pwdET;
 
+    MediaPlayer mp;
+
     // Tag used to log
     private static final String TAG = "LoginScreen";
 
@@ -34,9 +37,12 @@ public class LoginScreen extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login_screen);
 
+        mp = MediaPlayer.create(getApplicationContext(), R.raw.darksouls);  // <3
+        mp.start();
+
         setupUI();
 
-        mAuth = FirebaseAuth.getInstance();
+        mAuth = FirebaseAuth.getInstance();         // Gets Authentication reference
 
         mAuthListener = new FirebaseAuth.AuthStateListener(){
             @Override
@@ -67,6 +73,7 @@ public class LoginScreen extends AppCompatActivity {
         }
     }
 
+    // Setup UI elements and button listeners
     public void setupUI(){
         loginButton = (Button) findViewById(R.id.loginButton);
         newAccountButton = (Button) findViewById(R.id.newAccountButton);
@@ -100,6 +107,7 @@ public class LoginScreen extends AppCompatActivity {
 
     }
 
+    // Firebase Login Authentication
     public void login(String email, String password){
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
@@ -124,33 +132,13 @@ public class LoginScreen extends AppCompatActivity {
                 });
     }
 
-    public void createAccount(String email, String password){
-        mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        Log.d(TAG, "createUserWithEmail:onComplete:" + task.isSuccessful());
-
-                        // If sign in fails, display a message to the user. If sign in succeeds
-                        // the auth state listener will be notified and logic to handle the
-                        // signed in user can be handled in the listener.
-                        if (!task.isSuccessful()) {
-                            Toast.makeText(LoginScreen.this, "Authentication failed.",
-                                    Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(LoginScreen.this, "Created new account successfully.",
-                                    Toast.LENGTH_SHORT).show();
-                            gotoGameScreen();
-                        }
-                    }
-                });
-    }
-
+    // Calls GameScreen
     public void gotoGameScreen(){
         Intent gameScreenIntent = new Intent(this, GameScreen.class);
         startActivity(gameScreenIntent);
     }
 
+    // Calls NewAccountScreen
     public void gotoCreateAccountScreen(){
         Intent createAccountIntent = new Intent(this, NewAccountScreen.class);
         startActivity(createAccountIntent);

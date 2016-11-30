@@ -6,8 +6,8 @@ package org.christmann.medievalsim;
  */
 
 class Character {
-    boolean online;
-    String displayName;
+    private boolean online;
+    private String displayName;
 
     private int maxhp;          // max hp of the enemy
     private int currentHP;
@@ -22,6 +22,16 @@ class Character {
     public Character(){
         // Empty constructor so Firebase can do its thing
     }
+    Character(String name){
+        online = false;
+        displayName = name;
+        maxhp = 20;
+        currentHP = 20;
+        level = 1;
+        atk = 10;
+        def = 10;
+        spd = 10;
+    }
 
     public boolean isOnline() {
         return online;
@@ -31,7 +41,7 @@ class Character {
         this.online = online;
     }
 
-    public String getDisplayName() {
+    String getDisplayName() {
         return displayName;
     }
 

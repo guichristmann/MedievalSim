@@ -47,11 +47,6 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
     private FirebaseAuth.AuthStateListener mAuthListener;
     private FirebaseUser user;
 
-    String email;
-    String name;
-    String uid;
-    String provider;
-
     // Firebase Database
     FirebaseDatabase database;
     DatabaseReference myRef;
@@ -70,24 +65,25 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        firebaseAuthInit();
+
         // Get user information
-        mAuth = FirebaseAuth.getInstance();
-        setupFirebaseListener();
         user = FirebaseAuth.getInstance().getCurrentUser();
-        System.out.println("### user is: " + user.getUid());
+        //noinspection ConstantConditions
+        Log.d(TAG, "User: " + user.getUid());
         if (user != null) {
-            Toast welcome = Toast.makeText(getApplicationContext(), "Welcome " + email, Toast.LENGTH_LONG);
+            Toast welcome = Toast.makeText(getApplicationContext(), "Welcome " + user.getEmail(), Toast.LENGTH_LONG);
             welcome.show();
         }
 
         // Database initialization
         database = FirebaseDatabase.getInstance();
-        writeUserToDatabase();
+
+
         mGoogleApiClient = new GoogleApiClient.Builder(this).addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
-
         // Create the LocationRequest object
         mLocationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
@@ -98,9 +94,22 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         //readFromDB();
     }
 
-    public void writeUserToDatabase() {
-        myRef = database.getReference("users/" + user.getUid());
-        myRef.setValue(user);
+    // Initializes Firebase Authentication
+    public void firebaseAuthInit() {
+        mAuth = FirebaseAuth.getInstance();
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+                if (user != null) {
+                    // Character is signed in
+                    Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
+                } else {
+                    // Character is signed out
+                    Log.d(TAG, "onAuthStateChanged:signed_out");
+                }
+            }
+        };
     }
 
     public void readFromDB(){
@@ -161,22 +170,6 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-    }
-
-    public void setupFirebaseListener() {
-        mAuthListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                FirebaseUser user = firebaseAuth.getCurrentUser();
-                if (user != null) {
-                    // Character is signed in
-                    Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
-                } else {
-                    // Character is signed out
-                    Log.d(TAG, "onAuthStateChanged:signed_out");
-                }
-            }
-        };
     }
 
     @Override
