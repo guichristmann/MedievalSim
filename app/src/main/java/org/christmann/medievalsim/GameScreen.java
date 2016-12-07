@@ -91,7 +91,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                 .setFastestInterval(1000); // 1 second, in milliseconds
 
         //myRef.child("/Skeleton");
-        //readFromDB();
+        setupDBListener();
     }
 
     // Initializes Firebase Authentication
@@ -112,17 +112,22 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         };
     }
 
-    public void readFromDB(){
+    public void setupDBListener(){
         // Read from the database
-        myRef = database.getReference("/Skeleton");
+        myRef = database.getReference("enemies/");
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                Enemy enemy = dataSnapshot.getValue(Enemy.class);
-                System.out.println("############# " + enemy.getName());
-                LatLng latLng = new LatLng(enemy.getLat(), enemy.getLng());
+                Log.e("Count " , ""+dataSnapshot.getChildrenCount());
+                for(DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
+                    Enemy enemy = postSnapshot.getValue(Enemy.class);
+                    if (enemy != null){
+                        System.out.println("############# " + enemy.getName());
+                        LatLng latLng = new LatLng(enemy.getLat(), enemy.getLng());
 
-                handleNewEnemy(latLng, enemy.getName());
+                        handleNewEnemy(latLng, enemy.getName());
+                    }
+                }
             }
 
             @Override
@@ -162,15 +167,8 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        setUpMap();
     }
 
-    private void setUpMap() {
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-    }
 
     @Override
     protected void onResume() {
@@ -192,6 +190,8 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         Log.i(TAG, "Location services connected.");
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(getApplicationContext(),
+                    "No permission for GPS or GPS not on High Accuracy Mode", Toast.LENGTH_SHORT).show();
             Log.e(TAG, "No permission.");
             return;
         }
@@ -233,7 +233,6 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         mMap.addMarker(options);
         mMap.moveCamera(CameraUpdateFactory.zoomTo(15));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-
     }
 
 

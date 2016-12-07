@@ -6,7 +6,7 @@ package org.christmann.medievalsim;
  * Class to store enemies information
  */
 
-public class Enemy {
+class Enemy {
     private String name;        // Identifies "species"
     private int maxhp;          // max hp of the enemy
     private int currentHP;

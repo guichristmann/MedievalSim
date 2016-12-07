@@ -15,6 +15,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -107,7 +108,20 @@ public class NewAccountScreen extends AppCompatActivity implements View.OnClickL
         database = FirebaseDatabase.getInstance();  // gets Database instance
         usersRef = database.getReference("users/" + user.getUid()); // points database ref to /users/
         if (user != null) {
-            usersRef.setValue(user);    // Writes user information to database
+
+            usersRef.setValue(user, new DatabaseReference.CompletionListener() {
+                @Override
+                public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                    if (databaseError != null){
+                        Log.e(TAG, "User could not be saved. " + databaseError.getMessage());
+                    } else {
+                        Log.e(TAG, "User saved successfully.");
+                    }
+                }
+            });
+
+        } else {
+            Log.e(TAG, "User is null");
         }
 
         // To create a link between the user account and the character information
