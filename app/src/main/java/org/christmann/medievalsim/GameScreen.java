@@ -20,6 +20,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -102,7 +104,6 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                 if (user != null) {
                     // User is signed in
                     Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
-                    Toast.makeText(getApplicationContext(), "Welcome " + user.getEmail(), Toast.LENGTH_LONG).show();
                     getCharacterName();
                 } else {
                     // User is signed out
@@ -124,6 +125,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                 characterName = (String) dataSnapshot.getValue();   // gets character name from database
                 Log.e(TAG, "characterName: " + characterName);
                 if (characterName != null) {
+                    Toast.makeText(getApplicationContext(), "Welcome " + characterName, Toast.LENGTH_LONG).show();
                     updateUserStatus(true);
                 }
             }
@@ -172,6 +174,39 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         });
     }
 
+    // Changes player Marker to new position and writes new position to database
+    private void handleNewPlayerLocation(Location location) {
+        Log.d(TAG, location.toString());
+
+        double currentLatitude = location.getLatitude();
+        double currentLongitude = location.getLongitude();
+        LatLng latLng = new LatLng(currentLatitude, currentLongitude);
+
+        updateLocationDB(currentLatitude, currentLongitude);
+
+        pMarker.setTitle(characterName);    // sets marker name
+        pMarker.setPosition(latLng); // updates marker with new position
+    }
+
+    // Writes new location of the player to the database
+    private void updateLocationDB(double lat, double lng){
+        if (characterName != null){
+            charactersRef = database.getReference("characters/" + characterName + "/lat");  // points to latitude
+            charactersRef.setValue(lat); // writes new latitude
+            charactersRef = database.getReference("characters/" + characterName + "/lng");  // points to longiutde
+            charactersRef.setValue(lng); // writes new longitude
+        }
+    }
+
+    private void handleNewEnemy(LatLng latLng, String name) {
+        MarkerOptions options = new MarkerOptions()
+                .position(latLng)
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.skeleton_icon))   // gets skeleton icon
+                .title(name);
+
+        mMap.addMarker(options);    // adds monsters marker
+    }
+
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -208,49 +243,14 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
 
             MarkerOptions options = new MarkerOptions()
                     .position(lastPos)
-                    .title("You");
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.player_icon)) // gets playerIcon
+                    .title(characterName);
 
             pMarker = mMap.addMarker(options);  // creates new marker using last position recorded
 
             handleNewPlayerLocation(last_location);
         }
     }
-
-    // Changes player Marker to new position and writes new position to database
-    private void handleNewPlayerLocation(Location location) {
-        Log.d(TAG, location.toString());
-
-        double currentLatitude = location.getLatitude();
-        double currentLongitude = location.getLongitude();
-        LatLng latLng = new LatLng(currentLatitude, currentLongitude);
-
-        updateLocationDB(currentLatitude, currentLongitude);
-
-        pMarker.setPosition(latLng); // updates marker with new position
-    }
-
-    // Writes new location of the player to the database
-    private void updateLocationDB(double lat, double lng){
-        Log.d(TAG, "Writing new location to database.");
-
-        if (characterName != null){
-            charactersRef = database.getReference("characters/" + characterName + "/lat");  // points to latitude
-            charactersRef.setValue(lat); // writes new latitude
-            charactersRef = database.getReference("characters/" + characterName + "/lng");  // points to longiutde
-            charactersRef.setValue(lng); // writes new longitude
-        }
-    }
-
-    private void handleNewEnemy(LatLng latLng, String name) {
-        MarkerOptions options = new MarkerOptions()
-                .position(latLng)
-                .title(name);
-
-        mMap.addMarker(options);
-        mMap.moveCamera(CameraUpdateFactory.zoomTo(15));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-    }
-
 
     @Override
     public void onConnectionSuspended(int i) {
@@ -308,6 +308,8 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
             mAuth.removeAuthStateListener(mAuthListener);
         }
         updateUserStatus(false);    // sets character to offline
+        pMarker.remove();   // remove marker when connection is lost so we don't get duplicate
+        // markers when the service is reconnected
     }
 
 }

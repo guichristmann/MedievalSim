@@ -10,13 +10,11 @@ Location based RPG for android smartphones.
 
 ### TODO
 
-- [ ] Read and write user information on GameScreen.
-
 - [ ] Add other players to game screen, updating their position in some interval of time.
 
-- [ ] Create UI on game screen.
+- [ ] Create a UI for game screen.
 
-- [ ] Add custom markers for players and monsters.
+- [x] Add custom markers for players and monsters.
 
 - [ ] Create monster markers based on their distance to the player(< 1km).
 
