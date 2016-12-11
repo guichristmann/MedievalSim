@@ -18,11 +18,13 @@ Location based RPG for android smartphones.
 
 - [x] Add custom markers for players and monsters.
 
-- [ ] Create monster markers based on their distance to the player(< 1km).
+- [ ] Add monsters to list/create markers only if they are near the player (< 1km).
 
-- [ ] Add monster encounter based on their positions relative to the players.
+- [x] Add monster encounter based on their positions relative to the players.
 
-- [ ] Add monster combat screen.
+- [x] Add monster combat screen.
+
+- [ ] Create combat system.
 
 - [ ] Some form of player customization (maybe).
 

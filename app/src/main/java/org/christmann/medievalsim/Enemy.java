@@ -1,12 +1,15 @@
 package org.christmann.medievalsim;
 
 
+import java.io.Serializable;
+
 /**
  * Created by Guilherme on 28/11/2016.
  * Class to store enemies information
  */
 
-class Enemy {
+@SuppressWarnings("ALL")
+class Enemy implements Serializable{
     private String name;        // Identifies "species"
     private int maxhp;          // max hp of the enemy
     private int currentHP;

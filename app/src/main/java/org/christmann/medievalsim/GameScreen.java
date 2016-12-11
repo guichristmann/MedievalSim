@@ -43,7 +43,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
 
     final static int MIN_ENCOUNTER_DISTANCE = 100;
 
-    private boolean firstTimeSetup = false; // if true has already performed first time setup
+    private boolean characterLoaded = false; // when true playerCharacter has been read from DB successfully
 
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
@@ -85,6 +85,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         database = FirebaseDatabase.getInstance();
 
         playerCharacter = new Character();
+        //noinspection Convert2Diamond
         nearbyEnemies = new ArrayList<Enemy>();
 
         firebaseAuthInit();
@@ -125,8 +126,6 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(1000)        // in milliseconds
                 .setFastestInterval(100); // in milliseconds
-
-        firstTimeSetup = true; // has already performed google maps setup
     }
 
     // gets character name from inside User in the database
@@ -142,7 +141,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                 Log.e(TAG, "characterName: " + characterName);
                 if (characterName != null) {
                     charactersRef = database.getReference("characters/" + characterName);
-                    charactersRef.addValueEventListener(new ValueEventListener() {
+                    charactersRef.addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(DataSnapshot dataSnapshot) {
                             playerCharacter = dataSnapshot.getValue(Character.class);
@@ -151,8 +150,10 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                             // when google maps is initialing, and firstTimeSetup should be false so
                             // it is called only once, when we get playerCharacterInformation for
                             // the first time
-                            if (playerCharacter != null && !firstTimeSetup){
+                            if (playerCharacter != null){
                                 Log.e(TAG, "########## Got player character ########");
+                                playerCharacter.setDisplayName(characterName); // gambiarra do diabo
+                                characterLoaded = true;
                                 updateUserStatus(true);
                             }
                         }
@@ -241,17 +242,24 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
 
             Log.e(TAG, "Monster: " + iEnemy.getName() + " Dist: " + distance);
 
-            if (distance < MIN_ENCOUNTER_DISTANCE){
+            if (distance < MIN_ENCOUNTER_DISTANCE && characterLoaded){
                 Toast.makeText(getApplicationContext(), "COMBAT!!!! " + iEnemy.getName(),
                         Toast.LENGTH_SHORT).show();
-//                goToEncounterScreen(iEnemy);
+                goToEncounterScreen(iEnemy);
             }
         }
     }
 
-//    private void goToEncounterScreen(Enemy enemy){
-//        Intent encounterIntent = new Intent(this, EncounterScreen.class);
-//    }
+    private void goToEncounterScreen(Enemy enemy){
+        Intent encounterIntent = new Intent(this, EncounterScreen.class);
+        encounterIntent.putExtra("player", playerCharacter); // sends player information
+        encounterIntent.putExtra("enemy", enemy);   // sends enemy that will be fighted
+
+        Log.e(TAG, "Going to EncounterScreen");
+        Log.e(TAG, "Player Character is " + playerCharacter.getDisplayName());
+
+        startActivity(encounterIntent);
+    }
 
     // Writes the current character object to database
     private void writeCharacterToDB(){
@@ -380,19 +388,15 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
     @Override
     protected void onResume() {
         super.onResume();
-        if(firstTimeSetup){     // google maps api has already been setup
-            mGoogleApiClient.connect();
-            updateUserStatus(true);    // sets character to offline
-        }
+        mGoogleApiClient.connect();
+        updateUserStatus(true);    // sets character to online
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (mGoogleApiClient.isConnected()) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-            mGoogleApiClient.disconnect();
-        }
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        mGoogleApiClient.disconnect();
         updateUserStatus(false);    // sets character to offline
     }
 

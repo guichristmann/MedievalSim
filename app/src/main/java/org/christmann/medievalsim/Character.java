@@ -1,11 +1,14 @@
 package org.christmann.medievalsim;
 
+import java.io.Serializable;
+
 /**
  * Created by Guilherme on 28/11/2016.
  * Class that will stores character information and stats
  */
 
-class Character {
+@SuppressWarnings("ALL")
+class Character implements Serializable{
     private boolean online;
     private String displayName;
 
@@ -22,7 +25,7 @@ class Character {
     public Character(){
         // Empty constructor so Firebase can do its thing
     }
-    Character(String name){
+    public Character(String name){
         online = false;
         displayName = name;
         maxhp = 20;
@@ -41,7 +44,7 @@ class Character {
         this.online = online;
     }
 
-    String getDisplayName() {
+    public String getDisplayName() {
         return displayName;
     }
 
