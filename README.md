@@ -6,6 +6,8 @@ Location based RPG for android smartphones.
 
 - [ ] User Data when creating account sometimes is not written to the Database (Added debug information).
 
+- [ ] Null user is created on firebase.
+
 - [ ] A fuckton of foolproofing.
 
 ### TODO

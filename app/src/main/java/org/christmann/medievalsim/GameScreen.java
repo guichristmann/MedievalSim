@@ -1,5 +1,6 @@
 package org.christmann.medievalsim;
 
+import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -16,11 +17,9 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -33,6 +32,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
@@ -40,13 +41,18 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener {
 
+    final static int MIN_ENCOUNTER_DISTANCE = 100;
+
+    private boolean firstTimeSetup = false; // if true has already performed first time setup
+
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
 
     private String characterName;   // will hold character name for database referencing
+    private Character playerCharacter;
 
-    private List<Enemy> nearbyEnemies;
+    private List<Enemy> nearbyEnemies;  // list that holds enemies that are drawn in the screen
 
     // Firebase stuff
     private FirebaseAuth mAuth;
@@ -78,20 +84,14 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         // Database initialization
         database = FirebaseDatabase.getInstance();
 
+        playerCharacter = new Character();
+        nearbyEnemies = new ArrayList<Enemy>();
+
         firebaseAuthInit();
 
-        mGoogleApiClient = new GoogleApiClient.Builder(this).addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
+        googleMapsAPISetup();
 
-        // Create the LocationRequest object
-        mLocationRequest = LocationRequest.create()
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setInterval(1000)        // in milliseconds
-                .setFastestInterval(100); // in milliseconds
-
-        setupDBListener();
+        setupDBEnemiesListener();
     }
 
     // Initializes Firebase Authentication and get User that is logged in
@@ -104,7 +104,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                 if (user != null) {
                     // User is signed in
                     Log.d(TAG, "onAuthStateChanged:signed_in:" + user.getUid());
-                    getCharacterName();
+                    getCharacter();
                 } else {
                     // User is signed out
                     Log.d(TAG, "onAuthStateChanged:signed_out");
@@ -113,8 +113,24 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         };
     }
 
+    private void googleMapsAPISetup(){
+        Log.e(TAG, "Initializing Maps API");
+        mGoogleApiClient = new GoogleApiClient.Builder(this).addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+
+        // Create the LocationRequest object
+        mLocationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(1000)        // in milliseconds
+                .setFastestInterval(100); // in milliseconds
+
+        firstTimeSetup = true; // has already performed google maps setup
+    }
+
     // gets character name from inside User in the database
-    public void getCharacterName(){
+    public void getCharacter(){
         // gets character from inside user in the database
         usersRef = database.getReference("users/" + user.getUid() + "/character");
 
@@ -125,8 +141,30 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                 characterName = (String) dataSnapshot.getValue();   // gets character name from database
                 Log.e(TAG, "characterName: " + characterName);
                 if (characterName != null) {
-                    Toast.makeText(getApplicationContext(), "Welcome " + characterName, Toast.LENGTH_LONG).show();
-                    updateUserStatus(true);
+                    charactersRef = database.getReference("characters/" + characterName);
+                    charactersRef.addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            playerCharacter = dataSnapshot.getValue(Character.class);
+
+                            // playerCharacter can't be null because it is used to store the location
+                            // when google maps is initialing, and firstTimeSetup should be false so
+                            // it is called only once, when we get playerCharacterInformation for
+                            // the first time
+                            if (playerCharacter != null && !firstTimeSetup){
+                                Log.e(TAG, "########## Got player character ########");
+                                updateUserStatus(true);
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+                            Log.e(TAG, "Failed to read value.", databaseError.toException());
+                        }
+                    });
+
+                    Toast.makeText(getApplicationContext(), "Welcome " +
+                            characterName, Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -139,16 +177,16 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
 
     // changes user status to online when logged in
     // ** IMPORTANT **
-    // The first time this function is called is inside getCharacterName called from firebaseAuthInit.
+    // The first time this function is called is inside getCharacter called from firebaseAuthInit.
     // this is necessary to make sure we don't get a null value, which happens because firebase
     // reads values asynchronously
     public void updateUserStatus(boolean onlineStatus){
-        charactersRef = database.getReference("characters/" + characterName + "/online");
-        charactersRef.setValue(onlineStatus);
+        playerCharacter.setOnline(onlineStatus);    // sets playerCharacter Online to onlineStatus
+        writeCharacterToDB();       // calls func to write changes to DB
     }
 
-    // Reads list of enemies from database
-    public void setupDBListener(){
+    // Reads list of enemies from database and set up listener for them
+    public void setupDBEnemiesListener(){
         // Read from the database
         enemiesRef = database.getReference("enemies/");
         enemiesRef.addValueEventListener(new ValueEventListener() {
@@ -158,12 +196,14 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                 for(DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
                     Enemy enemy = postSnapshot.getValue(Enemy.class);
                     if (enemy != null){
-                        System.out.println("############# " + enemy.getName());
-                        LatLng latLng = new LatLng(enemy.getLat(), enemy.getLng());
+                        Log.e(TAG, "setupDBEnemiestListener:newEnemy:" + enemy.getName());
 
-                        handleNewEnemy(latLng, enemy.getName());
+                        nearbyEnemies.add(enemy);       // adds new enemy to enemy list
                     }
                 }
+
+                // after all enemies are got from database
+                handleEnemies();
             }
 
             @Override
@@ -174,7 +214,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         });
     }
 
-    // Changes player Marker to new position and writes new position to database
+    // Changes player Marker to new position and updates position in playerCharacter
     private void handleNewPlayerLocation(Location location) {
         Log.d(TAG, location.toString());
 
@@ -182,29 +222,90 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         double currentLongitude = location.getLongitude();
         LatLng latLng = new LatLng(currentLatitude, currentLongitude);
 
-        updateLocationDB(currentLatitude, currentLongitude);
+        updateCharacterLocation(currentLatitude, currentLongitude);
 
-        pMarker.setTitle(characterName);    // sets marker name
+        // checks if an encounter has happened
+        checkEncounter(location);
+
+        pMarker.setTitle(playerCharacter.getDisplayName());    // sets marker name
         pMarker.setPosition(latLng); // updates marker with new position
     }
 
-    // Writes new location of the player to the database
-    private void updateLocationDB(double lat, double lng){
-        if (characterName != null){
-            charactersRef = database.getReference("characters/" + characterName + "/lat");  // points to latitude
-            charactersRef.setValue(lat); // writes new latitude
-            charactersRef = database.getReference("characters/" + characterName + "/lng");  // points to longiutde
-            charactersRef.setValue(lng); // writes new longitude
+    private void checkEncounter(Location playerLocation){
+        for(Enemy iEnemy : nearbyEnemies){
+            Location monsterLocation = new Location(iEnemy.getName());
+            monsterLocation.setLatitude(iEnemy.getLat());
+            monsterLocation.setLongitude(iEnemy.getLng());
+
+            float distance = playerLocation.distanceTo(monsterLocation);
+
+            Log.e(TAG, "Monster: " + iEnemy.getName() + " Dist: " + distance);
+
+            if (distance < MIN_ENCOUNTER_DISTANCE){
+                Toast.makeText(getApplicationContext(), "COMBAT!!!! " + iEnemy.getName(),
+                        Toast.LENGTH_SHORT).show();
+//                goToEncounterScreen(iEnemy);
+            }
         }
     }
 
-    private void handleNewEnemy(LatLng latLng, String name) {
-        MarkerOptions options = new MarkerOptions()
-                .position(latLng)
-                .icon(BitmapDescriptorFactory.fromResource(R.drawable.skeleton_icon))   // gets skeleton icon
-                .title(name);
+//    private void goToEncounterScreen(Enemy enemy){
+//        Intent encounterIntent = new Intent(this, EncounterScreen.class);
+//    }
 
-        mMap.addMarker(options);    // adds monsters marker
+    // Writes the current character object to database
+    private void writeCharacterToDB(){
+        charactersRef = database.getReference("characters/" + characterName);
+        charactersRef.setValue(playerCharacter);        // writes character information to database
+    }
+
+    // Sets current position of playerCharacter and writes to the database
+    private void updateCharacterLocation(double lat, double lng){
+        playerCharacter.setLat(lat);
+        playerCharacter.setLng(lng);
+        writeCharacterToDB();
+    }
+
+    // This is called after enemies are added to nearbyEnemies list
+    // The function calculates the distance of enemies to the player and draw markers
+    // for them
+    private void handleEnemies(){
+        for(Enemy current_enemy : nearbyEnemies){
+            LatLng monster_pos = new LatLng(current_enemy.getLat(), current_enemy.getLng());
+
+            MarkerOptions options = new MarkerOptions()
+                    .position(monster_pos)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.skeleton_icon))   // gets skeleton icon
+                    .title(current_enemy.getName());
+
+            mMap.addMarker(options);    // adds monsters marker
+        }
+    }
+
+    // Calculate distance between 2 LatLng objects
+    private double calculateDistance(LatLng startP, LatLng endP){
+        int Radius = 6371;// radius of earth in Km
+        double lat1 = startP.latitude;
+        double lat2 = endP.latitude;
+        double lon1 = startP.longitude;
+        double lon2 = endP.longitude;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2)
+                * Math.sin(dLon / 2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+        double valueResult = Radius * c;
+        double km = valueResult / 1;
+        DecimalFormat newFormat = new DecimalFormat("####");
+        int kmInDec = Integer.valueOf(newFormat.format(km));
+        double meter = valueResult % 1000;
+        int meterInDec = Integer.valueOf(newFormat.format(meter));
+        Log.i("Radius Value", "" + valueResult + "   KM  " + kmInDec
+                + " Meter   " + meterInDec);
+
+        return Radius * c;
     }
 
     /**
@@ -223,7 +324,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        Log.i(TAG, "Location services connected.");
+        Log.e(TAG, "Location services connected.");
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Toast.makeText(getApplicationContext(),
@@ -279,8 +380,10 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
     @Override
     protected void onResume() {
         super.onResume();
-        mGoogleApiClient.connect();
-        updateUserStatus(true);    // sets character to offline
+        if(firstTimeSetup){     // google maps api has already been setup
+            mGoogleApiClient.connect();
+            updateUserStatus(true);    // sets character to offline
+        }
     }
 
     @Override
