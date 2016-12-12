@@ -15,7 +15,7 @@ class Character implements Serializable{
     private int maxhp;          // max hp of the enemy
     private int currentHP;
     private int level;          // level of the enemy
-    private int atk;            // modifier when dealing damage
+    private int atk;             // modifier when dealing damage
     private int def;            // modifier when receiving damage
     private int spd;            // modifier to determine who plays first
 

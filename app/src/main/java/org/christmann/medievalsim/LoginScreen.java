@@ -138,12 +138,14 @@ public class LoginScreen extends AppCompatActivity {
 
     // Calls GameScreen
     public void gotoGameScreen(){
+        mp.stop();  // stops music
         Intent gameScreenIntent = new Intent(this, GameScreen.class);
         startActivity(gameScreenIntent);
     }
 
     // Calls NewAccountScreen
     public void gotoCreateAccountScreen(){
+        mp.stop();  // stops music
         Intent createAccountIntent = new Intent(this, NewAccountScreen.class);
         startActivity(createAccountIntent);
     }

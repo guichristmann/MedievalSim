@@ -3,6 +3,7 @@ package org.christmann.medievalsim;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Camera;
 import android.location.Location;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -17,6 +18,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -225,6 +227,8 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
 
         updateCharacterLocation(currentLatitude, currentLongitude);
 
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16));
+
         // checks if an encounter has happened
         checkEncounter(location);
 
@@ -232,6 +236,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         pMarker.setPosition(latLng); // updates marker with new position
     }
 
+    // Checks if an encounter with a monster has happened and calls goToEncounterScreen
     private void checkEncounter(Location playerLocation){
         for(Enemy iEnemy : nearbyEnemies){
             Location monsterLocation = new Location(iEnemy.getName());
@@ -243,13 +248,14 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
             Log.e(TAG, "Monster: " + iEnemy.getName() + " Dist: " + distance);
 
             if (distance < MIN_ENCOUNTER_DISTANCE && characterLoaded){
-                Toast.makeText(getApplicationContext(), "COMBAT!!!! " + iEnemy.getName(),
+                Toast.makeText(getApplicationContext(), "Encountered a " + iEnemy.getName(),
                         Toast.LENGTH_SHORT).show();
                 goToEncounterScreen(iEnemy);
             }
         }
     }
 
+    // calls EncounterScreen, durrr
     private void goToEncounterScreen(Enemy enemy){
         Intent encounterIntent = new Intent(this, EncounterScreen.class);
         encounterIntent.putExtra("player", playerCharacter); // sends player information
@@ -258,6 +264,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         Log.e(TAG, "Going to EncounterScreen");
         Log.e(TAG, "Player Character is " + playerCharacter.getDisplayName());
 
+        encounterIntent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         startActivity(encounterIntent);
     }
 
@@ -290,31 +297,31 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         }
     }
 
-    // Calculate distance between 2 LatLng objects
-    private double calculateDistance(LatLng startP, LatLng endP){
-        int Radius = 6371;// radius of earth in Km
-        double lat1 = startP.latitude;
-        double lat2 = endP.latitude;
-        double lon1 = startP.longitude;
-        double lon2 = endP.longitude;
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1))
-                * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2)
-                * Math.sin(dLon / 2);
-        double c = 2 * Math.asin(Math.sqrt(a));
-        double valueResult = Radius * c;
-        double km = valueResult / 1;
-        DecimalFormat newFormat = new DecimalFormat("####");
-        int kmInDec = Integer.valueOf(newFormat.format(km));
-        double meter = valueResult % 1000;
-        int meterInDec = Integer.valueOf(newFormat.format(meter));
-        Log.i("Radius Value", "" + valueResult + "   KM  " + kmInDec
-                + " Meter   " + meterInDec);
-
-        return Radius * c;
-    }
+//    // Calculate distance between 2 LatLng objects
+//    private double calculateDistance(LatLng startP, LatLng endP){
+//        int Radius = 6371;// radius of earth in Km
+//        double lat1 = startP.latitude;
+//        double lat2 = endP.latitude;
+//        double lon1 = startP.longitude;
+//        double lon2 = endP.longitude;
+//        double dLat = Math.toRadians(lat2 - lat1);
+//        double dLon = Math.toRadians(lon2 - lon1);
+//        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+//                + Math.cos(Math.toRadians(lat1))
+//                * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2)
+//                * Math.sin(dLon / 2);
+//        double c = 2 * Math.asin(Math.sqrt(a));
+//        double valueResult = Radius * c;
+//        double km = valueResult / 1;
+//        DecimalFormat newFormat = new DecimalFormat("####");
+//        int kmInDec = Integer.valueOf(newFormat.format(km));
+//        double meter = valueResult % 1000;
+//        int meterInDec = Integer.valueOf(newFormat.format(meter));
+//        Log.i("Radius Value", "" + valueResult + "   KM  " + kmInDec
+//                + " Meter   " + meterInDec);
+//
+//        return Radius * c;
+//    }
 
     /**
      * Manipulates the map once available.
