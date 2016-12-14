@@ -36,6 +36,7 @@ public class EncounterScreen extends AppCompatActivity {
 
     // gotta have some sounds
     MediaPlayer hit, slash;
+    MediaPlayer battle;
 
     // gambiarrrraa
     Intent mapsIntent;
@@ -48,7 +49,11 @@ public class EncounterScreen extends AppCompatActivity {
         Log.i(TAG, "Entered EncounterScreen");
 
         hit = MediaPlayer.create(getApplicationContext(), R.raw.hit);       // getting sound references
+        hit.setVolume(0.1f, 0.1f);
         slash = MediaPlayer.create(getApplicationContext(), R.raw.slash);
+        slash.setVolume(0.3f, 0.3f);
+        battle = MediaPlayer.create(getApplicationContext(), R.raw.battle);
+        battle.start(); // ja pensou se o zelda fosse mulher?
 
         player = (Character) getIntent().getSerializableExtra("player");    // gets player
         enemy = (Enemy) getIntent().getSerializableExtra("enemy");          // gets enemy
@@ -221,7 +226,14 @@ public class EncounterScreen extends AppCompatActivity {
 
     // This is called when the run button is clicked
     private void run(){
-
+        mapsIntent = new Intent(this, GameScreen.class);
+        battle.stop();
+        timeHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                startActivity(mapsIntent);
+            }
+        }, 3000);
     }
 
     // deals with whatever the fuck happened in the combat and goes back to the map screen
@@ -245,11 +257,13 @@ public class EncounterScreen extends AppCompatActivity {
         }
 
         mapsIntent = new Intent(this, GameScreen.class);
+        battle.stop();
         timeHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 startActivity(mapsIntent);
+
             }
-        }, 3000);
+        }, 1000);
     }
 }

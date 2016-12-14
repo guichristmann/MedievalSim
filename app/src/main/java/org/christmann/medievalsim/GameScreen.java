@@ -166,8 +166,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
                         }
                     });
 
-                    Toast.makeText(getApplicationContext(), "Welcome " +
-                            characterName, Toast.LENGTH_LONG).show();
+                    Log.i(TAG, "Logged in");
                 }
             }
 
@@ -227,10 +226,10 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
 
         updateCharacterLocation(currentLatitude, currentLongitude);
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16));
-
         // checks if an encounter has happened
         checkEncounter(location);
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18));
 
         pMarker.setTitle(playerCharacter.getDisplayName());    // sets marker name
         pMarker.setPosition(latLng); // updates marker with new position
@@ -297,44 +296,16 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         }
     }
 
-//    // Calculate distance between 2 LatLng objects
-//    private double calculateDistance(LatLng startP, LatLng endP){
-//        int Radius = 6371;// radius of earth in Km
-//        double lat1 = startP.latitude;
-//        double lat2 = endP.latitude;
-//        double lon1 = startP.longitude;
-//        double lon2 = endP.longitude;
-//        double dLat = Math.toRadians(lat2 - lat1);
-//        double dLon = Math.toRadians(lon2 - lon1);
-//        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-//                + Math.cos(Math.toRadians(lat1))
-//                * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2)
-//                * Math.sin(dLon / 2);
-//        double c = 2 * Math.asin(Math.sqrt(a));
-//        double valueResult = Radius * c;
-//        double km = valueResult / 1;
-//        DecimalFormat newFormat = new DecimalFormat("####");
-//        int kmInDec = Integer.valueOf(newFormat.format(km));
-//        double meter = valueResult % 1000;
-//        int meterInDec = Integer.valueOf(newFormat.format(meter));
-//        Log.i("Radius Value", "" + valueResult + "   KM  " + kmInDec
-//                + " Meter   " + meterInDec);
-//
-//        return Radius * c;
-//    }
-
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
      * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mMap.getUiSettings().setScrollGesturesEnabled(false); // disables user control since we create our own
+
     }
 
     @Override
@@ -364,6 +335,8 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
 
             pMarker = mMap.addMarker(options);  // creates new marker using last position recorded
 
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(lastPos, 18));
+
             handleNewPlayerLocation(last_location);
         }
     }
@@ -387,6 +360,7 @@ public class GameScreen extends FragmentActivity implements OnMapReadyCallback,
         }
     }
 
+    // Callback everytime a new location is received from the gps
     @Override
     public void onLocationChanged(Location location) {
         handleNewPlayerLocation(location);
